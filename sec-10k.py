@@ -20,7 +20,7 @@ def resolve_context(root, ctx, ns):
         endDate   = root.xpath(f"//d:context[@id='{ctx}']//d:endDate/text()", namespaces={'d': ns[None]})[0]
         return f"from {startDate} to {endDate}"
 
-def main(xml_file):
+def process_xml_file(xml_file):
     root = etree.parse(xml_file)
     ns = root.getroot().nsmap
 
@@ -44,14 +44,22 @@ def main(xml_file):
         value   = (fact.text or "").strip()
         data[key] = { "name": name, "cik": cik, "property": property, "date": resolve_context(root, context, ns), "value": value, "unit": unit, "decimals": decimals }
 
-    print(json.dumps(list(data.values()), indent=4))
+    return list(data.values())
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python sec-10k.py <xml_file>")
+    if len(sys.argv) < 2:
+        print("Usage: python sec-10k.py <xml_file1> [xml_file2 ...]")
         sys.exit(1)
-    main(sys.argv[1])
-
+    
+    data = []
+    for xml_file in sys.argv[1:]:
+        try:
+            data.extend(process_xml_file(xml_file))
+        except Exception as e:
+            print(f"Error processing {xml_file}: {str(e)}", file=sys.stderr)
+            continue
+    
+    print(json.dumps(data, indent=4))
 
 
 
